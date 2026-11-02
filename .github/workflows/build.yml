@@ -48,6 +48,17 @@ jobs:
       - name: Sync Capacitor Android
         run: npx cap sync android
 
+      - name: Prepare debug signing key
+        run: |
+          mkdir -p $HOME/.android
+          keytool -genkeypair -v \
+            -keystore $HOME/.android/debug.keystore \
+            -storepass android \
+            -alias androiddebugkey \
+            -keypass android \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -dname "CN=Android Debug,O=Android,C=US"
+
       - name: Build release APK
         working-directory: ./android
         run: |
