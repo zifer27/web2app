@@ -119,7 +119,6 @@ function replaceConfigValue(source, key, value) {
     fail(`Nilai ${key} tidak ditemukan di capacitor.config.ts.`);
   }
   return source.replace(pattern, (_match, prefix) => `${prefix}${JSON.stringify(value)},`);
-}
 
 function setStringResource(xml, name, value) {
   const pattern = new RegExp(`(<string name="${name}">)[\\s\\S]*?(</string>)`);
