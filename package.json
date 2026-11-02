@@ -1,0 +1,23 @@
+{
+  "name": "webview-wrapper-template",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Capacitor Android wrapper template untuk WebToApp Builder",
+  "scripts": {
+    "inject": "node scripts/inject-config.js",
+    "sync": "cap sync android",
+    "open:android": "cap open android"
+  },
+  "dependencies": {
+    "@capacitor/android": "6.2.3",
+    "@capacitor/core": "6.2.3"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "6.2.3",
+    "sharp": "0.33.5",
+    "typescript": "5.6.3"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

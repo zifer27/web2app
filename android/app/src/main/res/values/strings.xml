@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">WebToApp</string>
+    <string name="title_activity_main">WebToApp</string>
+    <string name="package_name">com.webtoapp.wrapper</string>
+    <string name="custom_url_scheme">com.webtoapp.wrapper</string>
+</resources>

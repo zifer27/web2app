@@ -1,0 +1,97 @@
+name: Build WebView APK
+
+on:
+  workflow_dispatch:
+    inputs:
+      url:
+        description: 'URL website (wajib https://)'
+        required: true
+        type: string
+      appName:
+        description: 'Nama aplikasi (2-30 karakter)'
+        required: true
+        type: string
+      logoBase64:
+        description: 'Logo PNG/JPG dalam base64 (maksimal 52.000 karakter)'
+        required: true
+        type: string
+      themeColor:
+        description: 'Warna utama (#RRGGBB)'
+        required: true
+        default: '#2563EB'
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: webtoapp-build-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build release APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Prepare debug signing key
+        run: |
+          mkdir -p "$HOME/.android"
+          if [ ! -f "$HOME/.android/debug.keystore" ]; then
+            keytool -genkeypair -v \
+              -keystore "$HOME/.android/debug.keystore" \
+              -storepass android \
+              -alias androiddebugkey \
+              -keypass android \
+              -keyalg RSA \
+              -keysize 2048 \
+              -validity 10000 \
+              -dname "CN=Android Debug,O=Android,C=US"
+          fi
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Inject app configuration
+        env:
+          INPUT_URL: ${{ inputs.url }}
+          INPUT_APPNAME: ${{ inputs.appName }}
+          INPUT_LOGO_BASE64: ${{ inputs.logoBase64 }}
+          INPUT_THEMECOLOR: ${{ inputs.themeColor }}
+        run: node scripts/inject-config.js
+
+      - name: Sync Capacitor Android
+        run: npx cap sync android
+
+      - name: Build release APK
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release
+          path: android/app/build/outputs/apk/release/app-release.apk
+          if-no-files-found: error
+          retention-days: 90
