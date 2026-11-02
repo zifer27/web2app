@@ -4,36 +4,21 @@ on:
   workflow_dispatch:
     inputs:
       url:
-        description: 'URL website (wajib https://)'
+        description: 'Website URL'
         required: true
-        type: string
       appName:
-        description: 'Nama aplikasi (2-30 karakter)'
+        description: 'App Name'
         required: true
-        type: string
       logoBase64:
-        description: 'Logo PNG/JPG dalam base64 (maksimal 52.000 karakter)'
+        description: 'Logo Base64'
         required: true
-        type: string
       themeColor:
-        description: 'Warna utama (#RRGGBB)'
+        description: 'Theme Color'
         required: true
-        default: '#2563EB'
-        type: string
-
-permissions:
-  contents: read
-
-concurrency:
-  group: webtoapp-build-${{ github.ref }}
-  cancel-in-progress: false
 
 jobs:
   build:
-    name: Build release APK
     runs-on: ubuntu-latest
-    timeout-minutes: 45
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -42,7 +27,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -53,45 +37,28 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Prepare debug signing key
-        run: |
-          mkdir -p "$HOME/.android"
-          if [ ! -f "$HOME/.android/debug.keystore" ]; then
-            keytool -genkeypair -v \
-              -keystore "$HOME/.android/debug.keystore" \
-              -storepass android \
-              -alias androiddebugkey \
-              -keypass android \
-              -keyalg RSA \
-              -keysize 2048 \
-              -validity 10000 \
-              -dname "CN=Android Debug,O=Android,C=US"
-          fi
-
       - name: Install dependencies
-        run: npm install --no-audit --no-fund
+        run: npm install
 
       - name: Inject app configuration
-        env:
-          INPUT_URL: ${{ inputs.url }}
-          INPUT_APPNAME: ${{ inputs.appName }}
-          INPUT_LOGO_BASE64: ${{ inputs.logoBase64 }}
-          INPUT_THEMECOLOR: ${{ inputs.themeColor }}
         run: node scripts/inject-config.js
+        env:
+          INPUT_URL: ${{ github.event.inputs.url }}
+          INPUT_APPNAME: ${{ github.event.inputs.appName }}
+          INPUT_LOGO_BASE64: ${{ github.event.inputs.logoBase64 }}
+          INPUT_THEMECOLOR: ${{ github.event.inputs.themeColor }}
 
       - name: Sync Capacitor Android
         run: npx cap sync android
 
       - name: Build release APK
-        working-directory: android
+        working-directory: ./android
         run: |
           chmod +x gradlew
-          ./gradlew assembleRelease --no-daemon
+          ./gradlew assembleRelease
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: app-release
           path: android/app/build/outputs/apk/release/app-release.apk
-          if-no-files-found: error
-          retention-days: 90
